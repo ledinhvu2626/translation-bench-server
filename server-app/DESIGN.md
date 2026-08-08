@@ -143,8 +143,8 @@ A near-monochrome ink-blue base carries the whole system; color only enters to m
 ### Hierarchy
 - **Display** (600 weight, italic, 22px, line-height 1.2): the masthead `<h1>` and the auth-screen headline. The only large type in the system.
 - **Title** (500 weight, italic, 16px): dropzone and empty-state sub-headings — the serif voice at smaller scale.
-- **Body** (400 weight, 12.5–13px, line-height 1.5): all input text, textareas, source/target translation text, comment and suggestion bodies.
-- **Label** (500 weight, 9.5–11px — 9.5px is the system-wide floor, nothing renders smaller, uppercase where used, letter-spacing 0.4–1.2px, IBM Plex Mono): tab labels, badges, metadata rows, timestamps, section headers (`.file-group-head`, `.dash-header`), status pills.
+- **Body** (400 weight, 12.5–13px, line-height 1.5): all input text, textareas, source/target translation text, comment and suggestion bodies. **Exception:** Zen mode's `.zen-source-text`/`.zen-target textarea` step up to 15px — it's a one-string-at-a-time focused reading/editing view meant for long shifts, so it earns a deliberately larger size than the dense table view.
+- **Label** (500 weight, 10.5–11px — 10.5px is the system-wide floor, nothing renders smaller, uppercase where used, letter-spacing 0.4–1.2px, IBM Plex Mono): tab labels, badges, metadata rows, timestamps, section headers (`.file-group-head`, `.dash-header`), status pills.
 
 ### Named Rules
 **The Serif-Is-Rare Rule.** Spectral italic appears only on headings and empty-state glyphs — never on a button, a badge, or a data row. If a use of the serif isn't naming the product or naming an absence, it's the wrong font.
@@ -187,7 +187,7 @@ Avatars and status dots are fully circular (`border-radius:50%`). Progress-bar t
 - **Toggle pills** (`.comment-toggle`, `.tm-toggle`, `.suggestion-toggle`, etc.): borderless-background mono-label buttons that borrow state colors directly — amber border/text when something is pending, teal when resolved, full accent when active.
 
 ### Badges / Status Pills
-- **Style:** IBM Plex Mono, 9.5px floor (`--radius-micro` tier, see Shapes), uppercase, 2px radius, 1px border matching the state color, background is that color at ~10% opacity (e.g. `rgba(245,177,77,0.1)` for warn).
+- **Style:** IBM Plex Mono, 10.5px floor (`--radius-micro` tier, see Shapes), uppercase, 2px radius, 1px border matching the state color, background is that color at ~10% opacity (e.g. `rgba(245,177,77,0.1)` for warn).
 - **States:** `untranslated` (neutral outline), `edited` (Edited Sky), `mismatch`/error (Error Rose), `qa` (Alert Amber, `cursor:help`), `glossary` (Signal Blue, `cursor:help`), `approved` (Confirm Teal).
 
 ### Cards / Containers (Panels, Modals)
@@ -204,6 +204,8 @@ Avatars and status dots are fully circular (`border-radius:50%`). Progress-bar t
 ### Navigation
 - **Tabs** (`.tab-btn`): borderless, IBM Plex Mono uppercase 12px, `var(--ink-faint)` at rest, `var(--ink-dim)` on hover, `var(--accent)` with a 2px bottom border when active. Overflow tabs collapse into a `.tabs-more` dropdown that inherits the same active-color logic on its toggle.
 - **Sidebar file list:** each row gets a 2px left border, transparent at rest, `var(--accent)` when the file is active, with a subtle `var(--bg-raised)` background wash on hover/active.
+
+**The Left-Border Flag Rule.** A 2px colored left border marks "this row wants your attention right now," and it is the system's one reserved use of a colored side border — never decorative, never a generic list-item accent. It repeats identically across three surfaces: the sidebar file list (`.file-row.active`, Signal Blue), activity log rows (`.log-row.is-unread` Signal Blue, `.log-row.is-mention` Alert Amber), and notification cards (`.notif-card.is-mention .notif-highlight`, Alert Amber). Any new list surface that needs an "active/unread/mentions-you" flag reuses this exact treatment instead of inventing a badge, dot, or bolder row style.
 
 ### Suggestion / History / TM Panels (Signature Component)
 A recurring "inline panel" pattern: suggestions, translation-memory matches, and edit history all render as a `var(--bg-well)` panel nested directly beneath a translation row, bordered in `var(--line-soft)`, with a negative top margin so it visually attaches to the row above it. Each is a vertical list of items separated by `1px solid var(--line-soft)` dividers, IBM Plex Mono metadata line first (author, timestamp) then sans-serif body text. This is the system's core "expand for detail without leaving the row" mechanic — used identically across three different data types, which is what makes it feel systematic rather than bolted on.

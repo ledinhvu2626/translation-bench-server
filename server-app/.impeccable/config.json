@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "public/css/app.css"
+        ],
+        "createdAt": "2026-08-08T14:31:50.797Z",
+        "reason": "DESIGN.md documents the masthead subtitle gradient sweep as the system's one deliberate exception (Overview: 'The one indulgence...')"
+      },
+      {
+        "rule": "layout-transition",
+        "value": "*",
+        "files": [
+          "public/css/app.css"
+        ],
+        "createdAt": "2026-08-08T14:31:51.077Z",
+        "reason": "Masthead title collapse must animate max-width/margin-left so header content after it reflows into the freed space; will-change is scoped to the active-transition states (see code comment at app.css:67)"
+      }
+    ]
+  }
+}

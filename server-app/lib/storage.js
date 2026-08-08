@@ -104,6 +104,7 @@ function projectPaths(id) {
   return {
     dir,
     source: path.join(dir, 'source'),
+    commentImages: path.join(dir, 'comment-images'),
     edits: path.join(dir, 'edits.json'),
     comments: path.join(dir, 'comments.json'),
     log: path.join(dir, 'log.json'),
@@ -120,6 +121,7 @@ function projectPaths(id) {
 function ensureProjectFiles(id) {
   const p = projectPaths(id);
   fs.mkdirSync(p.source, { recursive: true });
+  fs.mkdirSync(p.commentImages, { recursive: true });
   if (!fs.existsSync(p.edits)) fs.writeFileSync(p.edits, '{}');
   if (!fs.existsSync(p.comments)) fs.writeFileSync(p.comments, '{}');
   if (!fs.existsSync(p.log)) fs.writeFileSync(p.log, '[]');

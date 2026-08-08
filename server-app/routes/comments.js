@@ -2,16 +2,62 @@
 // and the project glossary.
 const express = require('express');
 const crypto = require('crypto');
-const { requireProjectMember, requireProjectReviewer, requireCsrf } = require('../lib/auth-middleware');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+const storage = require('../lib/storage');
+const { COMMENT_IMAGE_EXT_FOR_MIME, MAX_COMMENT_IMAGE_BYTES } = require('../lib/constants');
+const { requireAuth, requireProjectMember, requireProjectReviewer, requireCsrf } = require('../lib/auth-middleware');
 const { fileVisibleTo, previewValue, logActivity, extractMentions } = require('../lib/project-state');
+const { safeBaseName } = require('../lib/tbx');
 
 const router = express.Router();
 
+const commentImageUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_COMMENT_IMAGE_BYTES } });
+
+// A comment's `image` field must point at a file this project actually owns —
+// otherwise a client could smuggle arbitrary URLs (including javascript:) or
+// another project's images into a comment.
+const COMMENT_IMAGE_NAME_RE = /^[a-f0-9-]+\.(?:png|jpg|webp|gif)$/i;
+function validCommentImageRef(projectId, image) {
+  if (typeof image !== 'string') return false;
+  const m = image.match(/^\/api\/comments\/image\/([^/]+)\/([^/]+)$/);
+  if (!m || m[1] !== projectId || !COMMENT_IMAGE_NAME_RE.test(m[2])) return false;
+  return fs.existsSync(path.join(storage.projectPaths(projectId).commentImages, m[2]));
+}
+
+router.post('/api/comments/image', requireProjectMember, commentImageUpload.single('image'), requireCsrf, (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'expected an image file' });
+  const ext = COMMENT_IMAGE_EXT_FOR_MIME[req.file.mimetype];
+  if (!ext) return res.status(400).json({ error: 'expected a PNG/JPEG/WEBP/GIF image' });
+  const name = `${crypto.randomUUID()}.${ext}`;
+  fs.writeFileSync(path.join(req.pstate.paths.commentImages, name), req.file.buffer);
+  res.json({ ok: true, image: `/api/comments/image/${req.projectId}/${name}` });
+});
+
+// Not project-scoped via requireProjectMember (that binds to the session's
+// *current* project) — a comment image can be viewed from any project the
+// requester has a role on, matched by the :projectId in the URL itself.
+router.get('/api/comments/image/:projectId/:filename', requireAuth, (req, res) => {
+  const { projectId } = req.params;
+  if (!storage.projectsMeta[projectId]) return res.status(404).end();
+  if (!storage.roleFor(req.session.user.username, projectId)) return res.status(403).end();
+  const base = safeBaseName(req.params.filename);
+  if (!COMMENT_IMAGE_NAME_RE.test(base)) return res.status(400).end();
+  const filePath = path.join(storage.projectPaths(projectId).commentImages, base);
+  if (!fs.existsSync(filePath)) return res.status(404).end();
+  res.set('Cache-Control', 'private, max-age=86400');
+  res.sendFile(filePath);
+});
+
 router.post('/api/comments', requireProjectMember, requireCsrf, (req, res) => {
-  const { filename, key, text, parentId } = req.body || {};
+  const { filename, key, text, parentId, image } = req.body || {};
   if (!filename || !key || !fileVisibleTo(req, filename)) return res.status(400).json({ error: 'unknown file' });
   const trimmed = typeof text === 'string' ? text.trim() : '';
-  if (!trimmed) return res.status(400).json({ error: 'comment text required' });
+  if (image != null && !validCommentImageRef(req.projectId, image)) {
+    return res.status(400).json({ error: 'invalid image reference' });
+  }
+  if (!trimmed && !image) return res.status(400).json({ error: 'comment text or image required' });
   if (trimmed.length > 2000) return res.status(400).json({ error: 'comment too long' });
 
   const st = req.pstate;
@@ -33,7 +79,7 @@ router.post('/api/comments', requireProjectMember, requireCsrf, (req, res) => {
     replyTo = parent.author;
   }
 
-  const entry = { id: crypto.randomUUID(), author: editor, text: trimmed, ts: Date.now(), resolved: false, mentions, reactions: {}, parentId: resolvedParentId };
+  const entry = { id: crypto.randomUUID(), author: editor, text: trimmed, image: image || null, ts: Date.now(), resolved: false, mentions, reactions: {}, parentId: resolvedParentId };
   if (!st.comments[filename]) st.comments[filename] = {};
   if (!st.comments[filename][key]) st.comments[filename][key] = [];
   st.comments[filename][key].push(entry);
@@ -87,6 +133,18 @@ router.post('/api/comments/react', requireProjectMember, requireCsrf, (req, res)
   res.json({ ok: true, likes, dislikes, myReaction: c.reactions[username] || null });
 });
 
+// Short-lived server-held undo buffer for comment deletes. The client's
+// "Undo" toast only ever gets back an opaque deleteId — never asked to
+// resubmit the comment content itself — so restore always replays exactly
+// what the server actually deleted, and can never be used to plant forged
+// content (e.g. someone else's name on a comment they didn't write).
+const RECENT_DELETES = new Map(); // deleteId -> { projectId, filename, key, comments, deletedBy, expiresAt }
+const DELETE_UNDO_TTL_MS = 5 * 60 * 1000;
+function pruneRecentDeletes() {
+  const now = Date.now();
+  for (const [id, rec] of RECENT_DELETES) if (rec.expiresAt < now) RECENT_DELETES.delete(id);
+}
+
 router.delete('/api/comments', requireProjectMember, requireCsrf, (req, res) => {
   const { filename, key, id } = req.body || {};
   const st = req.pstate;
@@ -110,36 +168,46 @@ router.delete('/api/comments', requireProjectMember, requireCsrf, (req, res) => 
   if (!st.comments[filename][key].length) delete st.comments[filename][key];
   st.save.comments();
   logActivity(st, 'comment_delete', editor, { filename, key });
+
+  pruneRecentDeletes();
+  const deleteId = crypto.randomUUID();
+  RECENT_DELETES.set(deleteId, {
+    projectId: req.projectId, filename, key, comments: removed,
+    deletedBy: editor, expiresAt: Date.now() + DELETE_UNDO_TTL_MS,
+  });
   // The client holds a short-lived undo window after a delete; this lets it
   // repost the exact same comment(s) — including the original author and
   // thread structure — instead of the undo re-creating them under whoever
   // clicked "Undo".
-  res.json({ ok: true, removed });
+  res.json({ ok: true, removed, deleteId });
 });
 
 router.post('/api/comments/restore', requireProjectMember, requireCsrf, (req, res) => {
-  const { filename, key, comments } = req.body || {};
-  if (!filename || !key || !Array.isArray(comments) || !comments.length || !fileVisibleTo(req, filename)) {
-    return res.status(400).json({ error: 'invalid restore payload' });
+  const { deleteId } = req.body || {};
+  pruneRecentDeletes();
+  const rec = typeof deleteId === 'string' ? RECENT_DELETES.get(deleteId) : null;
+  if (!rec || rec.projectId !== req.projectId) {
+    return res.status(404).json({ error: 'nothing to restore — the undo window may have expired' });
   }
-  const st = req.pstate;
   const editor = req.session.user.username;
   const canModerate = req.projectRole === 'admin' || req.projectRole === 'reviewer';
-  const top = comments.find((c) => c && !c.parentId) || comments[0];
-  const isOwner = top && top.author === editor;
-  if (!isOwner && !canModerate) return res.status(403).json({ error: 'not allowed to restore this' });
+  if (rec.deletedBy !== editor && !canModerate) return res.status(403).json({ error: 'not allowed to restore this' });
+  RECENT_DELETES.delete(deleteId);
 
+  const { filename, key } = rec;
+  const st = req.pstate;
+  if (!fileVisibleTo(req, filename)) return res.status(404).json({ error: 'unknown file' });
   if (!st.comments[filename]) st.comments[filename] = {};
   const list = st.comments[filename][key] || (st.comments[filename][key] = []);
   const existingIds = new Set(list.map((c) => c.id));
   let restored = 0;
-  for (const c of comments) {
-    if (!c || existingIds.has(c.id)) continue;
-    if (typeof c.id !== 'string' || typeof c.author !== 'string' || typeof c.text !== 'string' || c.text.length > 2000) continue;
+  for (const c of rec.comments) {
+    if (existingIds.has(c.id)) continue;
     list.push({
       id: c.id,
       author: c.author,
       text: c.text,
+      image: validCommentImageRef(req.projectId, c.image) ? c.image : null,
       ts: typeof c.ts === 'number' ? c.ts : Date.now(),
       parentId: typeof c.parentId === 'string' ? c.parentId : null,
       mentions: Array.isArray(c.mentions) ? c.mentions.filter((m) => typeof m === 'string') : [],

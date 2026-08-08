@@ -28,6 +28,11 @@ const ICONS = {
 };
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
+// Renders comment/reply text with `@username` tokens wrapped in styled chips.
+function renderTextWithMentions(text) {
+  return esc(text).replace(/(^|\s)@([a-zA-Z0-9_.-]{1,32})/g, (m, pre, name) => `${pre}<span class="mention-chip">@${name}</span>`);
+}
+
 // Queued so an overlapping message (e.g. a lock/conflict notice arriving
 // right after a save confirmation) is never silently dropped — each waits
 // its turn instead of clobbering the one on screen.
@@ -490,10 +495,14 @@ async function requestJoinProject(projectId) {
 
 async function cancelJoinRequest(projectId) {
   try {
-    await fetch('/api/projects/request/cancel', {
+    const res = await fetch('/api/projects/request/cancel', {
       method: 'POST', headers: buildJsonHeaders(), body: JSON.stringify({ projectId }),
     });
-  } catch (e) {}
+    if (!res.ok) throw new Error('cancel failed');
+    toast('Request cancelled.');
+  } catch (e) {
+    toast('Could not cancel the request — try again.');
+  }
   await showProjectPicker();
 }
 
@@ -650,6 +659,56 @@ function initHelpModal() {
     try { localStorage.setItem(HELP_SEEN_KEY, '1'); } catch (e) {}
   });
   document.getElementById('helpModalClose').addEventListener('click', close);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.style.display === 'flex') close();
+  });
+}
+
+const CHANGELOG_SEEN_KEY = 'seedersChangelogSeenDate';
+
+function renderChangelogList(entries) {
+  const list = document.getElementById('changelogList');
+  list.innerHTML = '';
+  if (!entries.length) {
+    list.appendChild(el('div', { class: 'changelog-empty', text: 'Nothing here yet.' }));
+    return;
+  }
+  for (const entry of entries) {
+    const items = el('ul', { class: 'changelog-items' },
+      (entry.items || []).map((text) => el('li', { text })));
+    list.appendChild(el('div', { class: 'changelog-entry' }, [
+      el('div', { class: 'changelog-entry-head' }, [
+        el('span', { class: 'changelog-date', text: entry.date ? new Date(entry.date).toLocaleDateString() : '' }),
+      ]),
+      items,
+    ]));
+  }
+}
+
+async function initChangelogModal() {
+  const overlay = document.getElementById('changelogModal');
+  const btn = document.getElementById('headerChangelogBtn');
+  const badge = document.getElementById('headerChangelogBadge');
+  const close = () => { overlay.style.display = 'none'; };
+
+  let entries = [];
+  try {
+    const res = await fetch('/changelog.json');
+    entries = await res.json();
+  } catch (e) { entries = []; }
+  renderChangelogList(entries);
+
+  const latestDate = entries[0] && entries[0].date;
+  let seenDate = null;
+  try { seenDate = localStorage.getItem(CHANGELOG_SEEN_KEY); } catch (e) {}
+  if (latestDate && latestDate !== seenDate) { badge.textContent = '•'; badge.style.display = 'inline-block'; }
+
+  btn.addEventListener('click', () => {
+    overlay.style.display = 'flex';
+    badge.style.display = 'none';
+    if (latestDate) { try { localStorage.setItem(CHANGELOG_SEEN_KEY, latestDate); } catch (e) {} }
+  });
+  document.getElementById('changelogModalClose').addEventListener('click', close);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && overlay.style.display === 'flex') close();
   });
@@ -2042,6 +2101,97 @@ function attachMentionAutocomplete(textarea) {
   textarea.addEventListener('blur', () => setTimeout(closeMentionDropdown, 150));
 }
 
+function buildCommentImageEl(url) {
+  const wrap = el('div', { class: 'comment-image' });
+  const img = document.createElement('img');
+  img.src = url;
+  img.loading = 'lazy';
+  img.addEventListener('click', () => openImageLightbox(url));
+  wrap.appendChild(img);
+  return wrap;
+}
+
+function openImageLightbox(url) {
+  const overlay = el('div', { class: 'image-lightbox-overlay' });
+  const img = document.createElement('img');
+  img.src = url;
+  overlay.appendChild(img);
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  function close() {
+    overlay.remove();
+    document.removeEventListener('keydown', onKey);
+  }
+  overlay.addEventListener('click', close);
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(overlay);
+}
+
+// Shared composer for both the top-level "add a comment" row and the reply
+// box — same textarea/mention/image-attach behavior either way, just a
+// different parentId and placeholder.
+function buildCommentComposer({ filename, key, parentId, placeholder, submitLabel, onSubmitted }) {
+  const wrap = el('div', { class: parentId ? 'comment-reply-box' : 'comment-add' });
+  const ta = el('textarea', { rows: '1', placeholder });
+  let pendingImage = null;
+
+  const preview = el('div', { class: 'comment-image-preview' });
+  const fileInput = el('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp,image/gif', style: 'display:none' });
+  const clearPending = () => {
+    pendingImage = null;
+    preview.style.display = 'none';
+    preview.innerHTML = '';
+  };
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    fileInput.value = '';
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast('Image too big — keep it under 5MB.'); return; }
+    const fd = new FormData();
+    fd.append('image', file);
+    try {
+      const res = await fetch('/api/comments/image', { method: 'POST', headers: buildJsonHeaders({ contentType: false }), body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'could not upload image');
+      pendingImage = data.image;
+      preview.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = pendingImage;
+      preview.appendChild(img);
+      preview.appendChild(el('button', { type: 'button', class: 'comment-image-remove', text: '✕', onclick: clearPending }));
+      preview.style.display = 'flex';
+    } catch (err) {
+      toast(err.message);
+    }
+  });
+  const attachBtn = el('button', {
+    type: 'button', class: 'comment-attach-btn', title: 'Attach an image', text: '\u{1F4CE}',
+    onclick: () => fileInput.click(),
+  });
+
+  const submit = () => {
+    const text = ta.value.trim();
+    if (!text && !pendingImage) return;
+    addComment(filename, key, text, parentId, pendingImage);
+    ta.value = '';
+    clearPending();
+    if (onSubmitted) onSubmitted();
+  };
+  ta.addEventListener('keydown', (e) => {
+    if (handleMentionKeydown(e, ta)) return;
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+  });
+  attachMentionAutocomplete(ta);
+
+  wrap.appendChild(ta);
+  wrap.appendChild(fileInput);
+  wrap.appendChild(preview);
+  wrap.appendChild(el('div', { class: 'comment-add-controls' }, [
+    attachBtn,
+    el('button', { class: 'btn primary', text: submitLabel, onclick: submit }),
+  ]));
+  return wrap;
+}
+
 function buildCommentActionRow(r, c, { isReply } = {}) {
   const reactions = c.reactions || {};
   let likeCount = 0, dislikeCount = 0;
@@ -2104,7 +2254,8 @@ function renderCommentsPanel(r) {
     ]));
     const mentionsYou = Array.isArray(c.mentions) && c.mentions.includes(AUTH.username);
     if (mentionsYou) body.appendChild(el('div', { class: 'comment-text', text: '↳ mentions you' }));
-    body.appendChild(el('div', { class: 'comment-text', text: c.text }));
+    if (c.text) body.appendChild(el('div', { class: 'comment-text', html: renderTextWithMentions(c.text) }));
+    if (c.image) body.appendChild(buildCommentImageEl(c.image));
     body.appendChild(buildCommentActionRow(r, c));
     item.appendChild(body);
     panel.appendChild(item);
@@ -2135,7 +2286,8 @@ function renderCommentsPanel(r) {
       ]));
       const replyMentionsYou = Array.isArray(reply.mentions) && reply.mentions.includes(AUTH.username);
       if (replyMentionsYou) rBody.appendChild(el('div', { class: 'comment-text', text: '↳ mentions you' }));
-      rBody.appendChild(el('div', { class: 'comment-text', text: reply.text }));
+      if (reply.text) rBody.appendChild(el('div', { class: 'comment-text', html: renderTextWithMentions(reply.text) }));
+      if (reply.image) rBody.appendChild(buildCommentImageEl(reply.image));
       rBody.appendChild(buildCommentActionRow(r, reply, { isReply: true }));
       rItem.appendChild(rBody);
 
@@ -2143,41 +2295,18 @@ function renderCommentsPanel(r) {
     }
 
     if (OPEN_REPLY.has(c.id)) {
-      const replyBox = el('div', { class: 'comment-reply-box' });
-      const rta = el('textarea', { rows: '1', placeholder: `Reply to ${c.author}…` });
-      const submitReply = () => {
-        const text = rta.value.trim();
-        if (!text) return;
-        addComment(r.filename, r.key, text, c.id);
-        OPEN_REPLY.delete(c.id);
-      };
-      rta.addEventListener('keydown', (e) => {
-        if (handleMentionKeydown(e, rta)) return;
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitReply(); }
-      });
-      attachMentionAutocomplete(rta);
-      replyBox.appendChild(rta);
-      replyBox.appendChild(el('button', { class: 'btn primary', text: 'Reply', onclick: submitReply }));
-      panel.appendChild(replyBox);
+      panel.appendChild(buildCommentComposer({
+        filename: r.filename, key: r.key, parentId: c.id,
+        placeholder: `Reply to ${c.author}…`, submitLabel: 'Reply',
+        onSubmitted: () => OPEN_REPLY.delete(c.id),
+      }));
     }
   }
 
-  const addRow = el('div', { class: 'comment-add' });
-  const ta = el('textarea', { rows: '1', placeholder: 'Flag an issue with this line\u2026' });
-  const submit = () => {
-    const text = ta.value.trim();
-    if (!text) return;
-    addComment(r.filename, r.key, text);
-    ta.value = '';
-  };
-  ta.addEventListener('keydown', (e) => {
-    if (handleMentionKeydown(e, ta)) return;
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
-  });
-  attachMentionAutocomplete(ta);
-  addRow.appendChild(ta);
-  addRow.appendChild(el('button', { class: 'btn primary', text: 'Comment', onclick: submit }));
-  panel.appendChild(addRow);
+  panel.appendChild(buildCommentComposer({
+    filename: r.filename, key: r.key, parentId: null,
+    placeholder: 'Flag an issue with this line\u2026', submitLabel: 'Comment',
+  }));
 
   return panel;
 }
@@ -2196,17 +2325,21 @@ async function reactToComment(filename, key, id, reaction) {
   }
 }
 
-async function addComment(filename, key, text, parentId) {
+async function addComment(filename, key, text, parentId, image) {
   try {
-    await fetch('/api/comments', {
+    const res = await fetch('/api/comments', {
       method: 'POST',
       headers: buildJsonHeaders(),
-      body: JSON.stringify({ filename, key, text, parentId: parentId || null }),
+      body: JSON.stringify({ filename, key, text, parentId: parentId || null, image: image || null }),
     });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'could not post comment');
+    }
     await fetchState();
     renderTable();
   } catch (e) {
-    toast('Could not post comment');
+    toast(e.message || 'Could not post comment');
   }
 }
 async function setCommentResolved(filename, key, id, resolved) {
@@ -2233,12 +2366,12 @@ async function deleteComment(filename, key, id) {
     if (!res.ok) throw new Error(data.error || 'could not delete comment');
     await fetchState();
     renderTable();
-    if (data.removed && data.removed.length) {
+    if (data.removed && data.removed.length && data.deleteId) {
       const count = data.removed.length;
       toast(count > 1 ? `Comment deleted (with ${count - 1} ${count === 2 ? 'reply' : 'replies'})` : 'Comment deleted', {
         actionLabel: 'Undo',
         duration: 6000,
-        onAction: () => restoreComments(filename, key, data.removed),
+        onAction: () => restoreComments(data.deleteId, count),
       });
     }
   } catch (e) {
@@ -2246,18 +2379,18 @@ async function deleteComment(filename, key, id) {
   }
 }
 
-async function restoreComments(filename, key, comments) {
+async function restoreComments(deleteId, count) {
   try {
     const res = await fetch('/api/comments/restore', {
       method: 'POST',
       headers: buildJsonHeaders(),
-      body: JSON.stringify({ filename, key, comments }),
+      body: JSON.stringify({ deleteId }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'could not restore comment');
     await fetchState();
     renderTable();
-    toast(comments.length > 1 ? 'Comment and replies restored' : 'Comment restored');
+    toast(count > 1 ? 'Comment and replies restored' : 'Comment restored');
   } catch (e) {
     toast('Could not undo: ' + e.message);
   }
@@ -3891,6 +4024,7 @@ window.addEventListener('popstate', () => {
   initTabsMore();
   initReportModal();
   initHelpModal();
+  initChangelogModal();
   initActiveUsersMenu();
   initNotifPopover();
   const loggedIn = await checkSession();

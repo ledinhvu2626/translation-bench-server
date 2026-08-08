@@ -1,0 +1,43 @@
+[
+  {
+    "date": "08/08/2026",
+    "items": [
+      "Data is now backed up automatically every 6 hours.",
+      "Comments can now include an attached image — click it to view full-size.",
+      "Fixed a bug where undoing a deleted comment could let someone else's name be forged on it.",
+      "Added this \"what's new\" panel — click the megaphone icon in the top bar any time.",
+      "The login screen now shows the app version."
+    ]
+  },
+  {
+    "date": "06/08/2026",
+    "items": [
+      "QA-flagged issues can now be marked ignored or approved so they stop cluttering the queue.",
+      "Undo now works for deleted suggestions, not just deleted comments.",
+      "Avatar upload now accepts real image files up to 2MB (was a smaller base64 upload before), and you can remove your avatar.",
+      "Notifications now only fire for @mentions and direct replies, cutting down on noise.",
+      "Fixed low-contrast text on hover for buttons."
+    ]
+  },
+  {
+    "date": "05/08/2026",
+    "items": [
+      "Non-admins can now request a brand-new project instead of only joining existing ones.",
+      "Added user reporting, so members can flag a problem with another user to a project admin.",
+      "Added a live presence view of who's online and what they're editing.",
+      "Approvals can now be applied in bulk instead of one at a time.",
+      "Added suggestions: once a string is translated, others propose changes instead of overwriting it directly.",
+      "Added comment reactions and threaded replies.",
+      "You can now change your own password and log yourself out of other sessions.",
+      "Links to a specific project/tab now survive a page refresh."
+    ]
+  },
+  {
+    "date": "04/08/2026",
+    "items": [
+      "The app now supports multiple translation projects, each with its own files, comments, and roles.",
+      "Added project creation, switching, and a request-to-join flow.",
+      "Added a notification feed for activity on your files."
+    ]
+  }
+]
