@@ -1,0 +1,13 @@
+services:
+  translation-bench:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      # Set real values in a local .env file (not committed) or your host's
+      # secret manager. Do not hardcode secrets here.
+      SESSION_SECRET: ${SESSION_SECRET}
+      ADMIN_USERS: ${ADMIN_USERS:-}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

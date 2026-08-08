@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-08T00:00:00.000Z",
+  "title": "Design System: Seeders Translation Tools",
+  "extensions": {
+    "colorMeta": {
+      "accent": { "role": "primary", "displayName": "Signal Blue", "canonical": "#4d7cff", "tonalRamp": ["#0a1a42", "#14295c", "#2552c7", "#4d7cff", "#8aa8ff", "#c3d2ff", "#eef2ff"] },
+      "accent-dim": { "role": "primary", "displayName": "Signal Blue, Dimmed", "canonical": "#2552c7" },
+      "on-accent": { "role": "primary", "displayName": "On Accent", "canonical": "#fff2e0", "tonalRamp": ["#3a2f1c", "#6e5a34", "#a3854e", "#d9b676", "#fff2e0"] },
+      "ok": { "role": "secondary", "displayName": "Confirm Teal", "canonical": "#2fd4c5", "tonalRamp": ["#0a2e2b", "#123f3a", "#1a6f6a", "#2fd4c5", "#7fe8db", "#bff5ee"] },
+      "ok-dim": { "role": "secondary", "displayName": "Confirm Teal, Dimmed", "canonical": "#1a6f6a" },
+      "warn": { "role": "secondary", "displayName": "Alert Amber", "canonical": "#f5b14d", "tonalRamp": ["#3a2708", "#5c3d0e", "#8a5c17", "#f5b14d", "#f9cb85", "#fce3b8"] },
+      "err": { "role": "secondary", "displayName": "Error Rose", "canonical": "#ff6f7f", "tonalRamp": ["#3a0f16", "#6c3340", "#a3495a", "#ff6f7f", "#ff9ea8", "#ffcdd3"] },
+      "err-dim": { "role": "secondary", "displayName": "Error Rose, Dimmed", "canonical": "#6c3340" },
+      "edited": { "role": "tertiary", "displayName": "Edited Sky", "canonical": "#77a8ff", "tonalRamp": ["#0f1c3a", "#2f477d", "#5a7fc9", "#77a8ff", "#a9c6ff", "#d6e4ff"] },
+      "edited-dim": { "role": "tertiary", "displayName": "Edited Sky, Dimmed", "canonical": "#2f477d" },
+      "bg": { "role": "neutral", "displayName": "Void", "canonical": "#07111f" },
+      "bg-well": { "role": "neutral", "displayName": "Well", "canonical": "#0a1222" },
+      "bg-raised": { "role": "neutral", "displayName": "Raised", "canonical": "#0d1729" },
+      "bg-panel": { "role": "neutral", "displayName": "Panel", "canonical": "#111c2f", "tonalRamp": ["#07111f", "#0a1222", "#0d1729", "#111c2f", "#22344f", "#7f8fa8", "#aab8d1", "#f4f7ff"] },
+      "line": { "role": "neutral", "displayName": "Line", "canonical": "#22344f" },
+      "line-soft": { "role": "neutral", "displayName": "Line, Soft", "canonical": "#172642" },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#f4f7ff" },
+      "ink-dim": { "role": "neutral", "displayName": "Ink, Dim", "canonical": "#aab8d1" },
+      "ink-faint": { "role": "neutral", "displayName": "Ink, Faint", "canonical": "#7f8fa8" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display (Spectral Italic)", "purpose": "Masthead title and auth-screen headline only; the system's one editorial voice." },
+      "label": { "displayName": "Label / Mono", "purpose": "Tabs, badges, metadata, timestamps, section headers — anything that is machine-adjacent data rather than human prose. 9.5px is the hard floor; nothing in the system renders smaller." },
+      "body": { "displayName": "Body / Sans", "purpose": "Inputs, textareas, translation text, comments, glossary notes — anything a human wrote." }
+    },
+    "shadows": [
+      { "name": "overlay", "value": "0 8px 24px rgba(0,0,0,0.35)", "purpose": "The only shadow in the system; marks a dropdown menu or modal as floating above the document. Backed by the CSS custom property --shadow-overlay." }
+    ],
+    "motion": [
+      { "name": "subtitle-glow", "value": "background-position 5s linear infinite alternate", "purpose": "The masthead subtitle's animated gradient sweep — the system's one ambient 'this is alive' signal, rendered as its own span next to the h1." },
+      { "name": "toast-enter", "value": "opacity/transform 0.25s ease", "purpose": "Toast notifications slide up and fade in from the bottom-right. Toasts now queue rather than overwrite, so a second message waits its turn instead of clobbering the first." },
+      { "name": "zen-card-transition", "value": "opacity/transform 0.18s ease", "purpose": "Zen-mode card-to-card transition when navigating between strings." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "760px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main call-to-action button (save, submit, approve). Fill stays flat on hover by design — full-strength Signal Blue can't host On Accent text at WCAG AA, so interactivity reads through border + glow + lift instead.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Save changes</button>",
+      "css": ".ds-btn{font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:12px;padding:7px 12px;border-radius:3px;border:1px solid transparent;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s,transform 0.1s;} .ds-btn-primary{background:#2552c7;border-color:#2552c7;color:#fff2e0;font-weight:500;box-shadow:0 1px 0 rgba(255,255,255,0.08) inset,0 1px 3px rgba(0,0,0,0.3);} .ds-btn-primary:hover{border-color:#4d7cff;box-shadow:0 1px 0 rgba(255,255,255,0.1) inset,0 0 0 3px rgba(77,124,255,0.18),0 2px 6px rgba(0,0,0,0.35);transform:translateY(-1px);} .ds-btn-primary:focus-visible{outline:2px solid #4d7cff;outline-offset:2px;} .ds-btn-primary:disabled{opacity:0.4;cursor:not-allowed;}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Default/secondary button used throughout toolbars and rows.",
+      "html": "<button class=\"ds-btn ds-btn-ghost\">Cancel</button>",
+      "css": ".ds-btn-ghost{background:#0d1729;border:1px solid #22344f;color:#aab8d1;} .ds-btn-ghost:hover{border-color:#2552c7;color:#4d7cff;} .ds-btn-ghost:focus-visible{outline:2px solid #4d7cff;outline-offset:2px;}"
+    },
+    {
+      "name": "Tab Button",
+      "kind": "nav",
+      "description": "Top navigation tab; mono uppercase label with an accent underline when active.",
+      "html": "<button class=\"ds-tab ds-tab-active\">Editor</button>",
+      "css": ".ds-tab{background:none;border:none;color:#7f8fa8;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;letter-spacing:0.4px;text-transform:uppercase;padding:9px 16px;cursor:pointer;border-bottom:2px solid transparent;} .ds-tab:hover{color:#aab8d1;} .ds-tab-active{color:#4d7cff;border-bottom-color:#4d7cff;} .ds-tab:focus-visible{outline:2px solid #4d7cff;outline-offset:2px;}"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Small uppercase status pill; color swaps per state (shown here as 'edited'). Uses the micro radius tier (2px) — the smallest corner in the system, reserved for badges, tags, and marks.",
+      "html": "<span class=\"ds-badge ds-badge-edited\">Edited</span>",
+      "css": ".ds-badge{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:0.4px;padding:2px 6px;border-radius:2px;display:inline-block;} .ds-badge-edited{color:#77a8ff;border:1px solid #2f477d;background:rgba(119,168,255,0.08);} .ds-badge-warn{color:#f5b14d;border:1px solid #f5b14d;background:rgba(245,177,77,0.1);} .ds-badge-error{color:#ff6f7f;border:1px solid #ff6f7f;background:rgba(255,111,127,0.1);} .ds-badge-ok{color:#2fd4c5;border:1px solid #1a6f6a;background:rgba(47,212,197,0.1);}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "Standard single-line text field used across toolbars and forms.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search keys...\">",
+      "css": ".ds-input{background:#0a1222;border:1px solid #22344f;color:#f4f7ff;padding:7px 10px;border-radius:3px;font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:12.5px;} .ds-input:focus{outline:none;border-color:#2552c7;} .ds-input:focus-visible{outline:2px solid #4d7cff;outline-offset:2px;} .ds-input::placeholder{color:#7f8fa8;}"
+    },
+    {
+      "name": "Modal Card",
+      "kind": "card",
+      "description": "Overlay dialog surface; the one place elevation shadow is used. Announced with role=\"dialog\" aria-modal=\"true\" in the shipped markup.",
+      "html": "<div class=\"ds-modal-overlay\"><div class=\"ds-modal-card\" role=\"dialog\" aria-modal=\"true\" aria-label=\"Manage members\"><div class=\"ds-modal-head\">Manage members</div><p style=\"color:#aab8d1;font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:12.5px;margin:0;\">Modal body content.</p></div></div>",
+      "css": ".ds-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;} .ds-modal-card{background:#111c2f;border:1px solid #22344f;border-radius:6px;width:min(420px,92vw);padding:18px;box-shadow:0 8px 24px rgba(0,0,0,0.35);} .ds-modal-head{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;color:#f4f7ff;margin-bottom:14px;border-bottom:1px solid #22344f;padding-bottom:10px;}"
+    },
+    {
+      "name": "Inline Panel (Suggestions / History / TM)",
+      "kind": "custom",
+      "description": "Signature 'expand beneath the row' pattern shared by suggestion, edit-history, and TM-match panels — a metadata line first, then body text.",
+      "html": "<div class=\"ds-panel\"><div class=\"ds-panel-item\"><div class=\"ds-panel-meta\">alice · 2h ago</div><div class=\"ds-panel-body\">Looks good, just fix the punctuation.</div></div></div>",
+      "css": ".ds-panel{background:#0a1222;border:1px solid #172642;border-radius:3px;margin:-4px 4px 10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;} .ds-panel-item{border-bottom:1px solid #172642;padding-bottom:8px;} .ds-panel-item:last-child{border-bottom:none;padding-bottom:0;} .ds-panel-meta{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;color:#7f8fa8;margin-bottom:3px;} .ds-panel-body{font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:12.5px;color:#f4f7ff;line-height:1.5;}"
+    },
+    {
+      "name": "Comment Thread",
+      "kind": "custom",
+      "description": "Avatar-anchored comment pattern (restyled this session to read like a familiar social-comment thread while staying inside the dark, sharp-radius system — no rounded bubble chrome). Name is bold sans, timestamp is faint mono, and every action (react, reply, resolve, delete, report) is a plain-weight text link with no border or fill, never a boxed button. Replies collapse behind a 'View N replies' link by default.",
+      "html": "<div class=\"ds-comment\"><div class=\"ds-comment-avatar\">YB</div><div class=\"ds-comment-body\"><div class=\"ds-comment-header\"><span class=\"ds-comment-author\">YunBach</span><span class=\"ds-comment-time\">Aug 4, 12:41 PM</span></div><div class=\"ds-comment-text\">Fixed</div><div class=\"ds-comment-actions\"><button class=\"ds-comment-link\">👍 3</button><button class=\"ds-comment-link\">Reply</button><button class=\"ds-comment-link ds-comment-link-ok\">Resolve</button></div></div></div>",
+      "css": ".ds-comment{display:flex;gap:10px;align-items:flex-start;font-family:'IBM Plex Sans',system-ui,sans-serif;} .ds-comment-avatar{width:20px;height:20px;border-radius:50%;background:#2552c7;color:#f4f7ff;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;} .ds-comment-body{flex:1;min-width:0;} .ds-comment-header{display:flex;align-items:baseline;gap:8px;margin-bottom:2px;} .ds-comment-author{font-size:12.5px;font-weight:600;color:#f4f7ff;} .ds-comment-time{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;color:#7f8fa8;} .ds-comment-text{font-size:12.5px;color:#f4f7ff;line-height:1.5;margin-bottom:5px;} .ds-comment-actions{display:flex;gap:12px;} .ds-comment-link{background:none;border:none;padding:0;cursor:pointer;font-size:11px;font-weight:600;color:#7f8fa8;} .ds-comment-link:hover{color:#4d7cff;text-decoration:underline;text-underline-offset:2px;} .ds-comment-link-ok{color:#2fd4c5;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Night Watch Terminal",
+    "overview": "This is a quiet, focused control room for overnight and volunteer-shift translation work, not a marketing surface. The palette is a near-black ink-blue lit only by a cold electric-blue accent, so the whole interface reads as a dim console you sit at during a long editing session rather than a page you visit. Precision comes first: a four-tier radius scale (2/3/4/6px, each tied to what it marks) everywhere, dense monospace labels on every badge and tab, and color reserved strictly as a state signal rather than decoration. The one indulgence is an italic serif reserved for a handful of headings and empty-state glyphs — a scholarly, editorial voice breaking through the otherwise technical surface, present exactly where the product is naming itself or an absence, and nowhere else. The system is precise and unshowy by intent: information density and legibility at speed outrank visual flourish.",
+    "keyCharacteristics": [
+      "Near-black ink-blue surfaces with a single cold-blue accent, used sparingly",
+      "Monospace for all labels/tabs/badges/metadata; sans for body copy and inputs; italic serif reserved for display headings only",
+      "A four-tier radius scale — 2px micro (badges/tags), 3px control, 4px compact (menu/dropdown rows), 6px card",
+      "Color is a state signal (edited / locked / flagged / approved / error), never a mood choice",
+      "Flat by default; shadow appears only on floating overlays (menus, modals, dropdowns), carried by one named token, --shadow-overlay"
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "Signal Blue is the only color allowed to mean 'interactive/focused.' Every other color means a specific translation-workflow state and nothing else.", "section": "colors" },
+      { "name": "The Dim-at-Rest Rule", "body": "Accent and state colors default to their -dim variant for fills and borders at rest, and jump to full strength only on hover, active, or focus.", "section": "colors" },
+      { "name": "The On-Accent Contrast Rule", "body": "On Accent text (#fff2e0) is only safe on -dim fills (accent-dim, err-dim), which clear WCAG AA at 6:1+. It never sits on a full-strength accent fill, which falls to 3.4:1 — those surfaces pair with Void (--bg) text instead.", "section": "colors" },
+      { "name": "The Serif-Is-Rare Rule", "body": "Spectral italic appears only on headings and empty-state glyphs — never on a button, a badge, or a data row.", "section": "typography" },
+      { "name": "The Mono-Is-Metadata Rule", "body": "IBM Plex Mono marks labels, states, timestamps, and machine-adjacent data. Human-written prose stays in the sans body font.", "section": "typography" },
+      { "name": "The Flat-Until-Floating Rule", "body": "Nothing in the normal document flow gets a shadow. Shadow exists solely to mark that an element is floating above everything else, carried by the single --shadow-overlay token.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep every state signal (edited, locked, flagged, approved, mismatch) tied to its one fixed color across the whole app.",
+      "Do default accent and state colors to their -dim variant at rest, reserving full-strength color for hover/active/focus.",
+      "Do keep the italic Spectral serif confined to headings and empty-state glyphs; everything else is mono or sans.",
+      "Do use the four-tier radius scale — 2px micro (badges/tags/marks), 3px control, 4px compact (menu items/dropdown rows), 6px card — and reach for var(--radius-micro)/var(--radius-compact) instead of a new literal.",
+      "Do give every interactive element a visible :focus-visible ring (2px solid accent) — it is a system-wide baseline, not opt-in per component."
+    ],
+    "donts": [
+      "Don't add a shadow to anything in normal document flow — shadow is reserved to mean 'this is a floating overlay.'",
+      "Don't introduce a new accent hue for a one-off feature; extend meaning from the existing state-color vocabulary instead.",
+      "Don't put prose a human wrote (comments, translation text, glossary notes) in the monospace font.",
+      "Don't round corners past 6px or add soft/large-radius 'friendly' shapes.",
+      "Don't put On Accent text on a full-strength accent fill — the pairing fails WCAG AA; pair full-strength fills with Void (--bg) text instead."
+    ]
+  }
+}

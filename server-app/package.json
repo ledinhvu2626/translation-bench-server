@@ -1,0 +1,15 @@
+{
+  "name": "translation-bench",
+  "version": "0.3.7",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "jszip": "^3.10.1",
+    "multer": "^1.4.5-lts.1"
+  }
+}

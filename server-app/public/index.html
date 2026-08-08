@@ -1,0 +1,543 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Seeders Translation Tools</title>
+<link rel="icon" type="image/svg+xml" href="/SeedersT.svg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div id="app">
+
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <img src="/SeedersT.svg" alt="" class="auth-brand-mark" width="40" height="40">
+        <div class="auth-brand-text">
+          <h1>Seeders Translation Tools</h1>
+          <div class="auth-brand-ver">Alpha &middot; <span id="appVersionAuth">&hellip;</span></div>
+        </div>
+      </div>
+      <p class="auth-sub" id="authSubText">Sign in to pick up where you left off.</p>
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="authTabLogin">Log in</button>
+        <button class="auth-tab-btn" id="authTabRegister">Register</button>
+      </div>
+      <form id="authForm">
+        <label class="auth-field">
+          <span class="auth-field-label">Username</span>
+          <input type="text" id="authUsername" placeholder="e.g. NoWife" autocomplete="username" required>
+        </label>
+        <label class="auth-field">
+          <span class="auth-field-label">Password</span>
+          <input type="password" id="authPassword" placeholder="Your password" autocomplete="current-password" required>
+        </label>
+        <button type="submit" class="btn primary auth-submit" id="authSubmitBtn">Log in</button>
+      </form>
+      <div class="auth-error" id="authError"></div>
+    </div>
+  </div>
+
+  <div id="projectPicker" class="auth-screen" style="display:none;">
+    <div class="auth-card">
+      <h1>Pick a project</h1>
+      <p class="auth-sub" id="projectPickerSub">Each project is a separate game &mdash; its own strings, glossary, and team.</p>
+      <div id="projectPickerList" class="project-picker-list"></div>
+      <div id="projectPickerEmpty" class="auth-error" style="display:none;color:var(--ink-faint);">No project access yet &mdash; ask a site admin to add you to one.</div>
+      <div id="newProjectBox" style="display:none;margin-top:18px;border-top:1px solid var(--line-soft);padding-top:16px;">
+        <div class="auth-field-label" style="margin-bottom:10px;">Create a new project &middot; site admin</div>
+        <form id="newProjectForm" style="display:flex;flex-direction:column;gap:10px;">
+          <input type="text" id="newProjectName" placeholder="Project name, e.g. Project Zomboid" required>
+          <button type="submit" class="btn primary auth-submit">Create project</button>
+        </form>
+      </div>
+      <div id="createRequestReviewBox" style="display:none;margin-top:18px;border-top:1px solid var(--line-soft);padding-top:16px;">
+        <div class="auth-field-label" style="margin-bottom:10px;">Pending project requests &middot; site admin</div>
+        <div id="createRequestReviewList" class="team-list"></div>
+      </div>
+      <div id="requestProjectBox" style="display:none;margin-top:18px;border-top:1px solid var(--line-soft);padding-top:16px;">
+        <div class="auth-field-label" style="margin-bottom:10px;">Don&rsquo;t see your project? Request one</div>
+        <div id="myCreateRequestsList"></div>
+        <form id="requestProjectForm" style="display:flex;flex-direction:column;gap:10px;">
+          <input type="text" id="requestProjectName" placeholder="Project name, e.g. Project Zomboid" required>
+          <button type="submit" class="btn auth-submit">Request project</button>
+        </form>
+      </div>
+      <div class="auth-error" id="projectPickerError"></div>
+      <button class="btn auth-signout" id="projectPickerSignOut">Sign out</button>
+    </div>
+  </div>
+
+  <div id="mainApp" style="display:none;">
+  <div class="masthead">
+    <button type="button" class="masthead-home" id="mastheadHomeBtn" title="Go to Dashboard" aria-label="Go to Dashboard">
+      <img src="/SeedersT.svg" alt="" class="masthead-logo" width="28" height="28">
+      <h1>Seeders Translation Tools</h1>
+      <span class="subtitle">Alpha &middot; <span id="appVersionMasthead">&hellip;</span></span>
+    </button>
+    <div class="spacer"></div>
+    <div class="active-users-wrap" id="activeUsersWrap">
+      <div class="active-users" id="activeUsers" title="Click to see who's online"><span class="dot"></span><span id="activeUsersCount">&mdash;</span></div>
+      <div class="active-users-menu" id="activeUsersMenu"></div>
+    </div>
+    <button class="header-notif-btn" id="headerHelpBtn" title="Help" aria-label="Help">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M6.1 6.2a2 2 0 0 1 3.8.9c0 1.2-1.7 1.4-1.8 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="11.6" r="0.75" fill="currentColor"/></svg>
+    </button>
+    <div class="notif-popover-wrap" id="notifPopoverWrap">
+      <button class="header-notif-btn" id="headerNotifBtn" title="Notifications">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2.2a3 3 0 0 0-3 3v1.8c0 .6-.2 1.2-.6 1.7L3 10.2c-.4.5 0 1.3.6 1.3h8.8c.6 0 1-.8.6-1.3l-1.4-1.5a2.6 2.6 0 0 1-.6-1.7V5.2a3 3 0 0 0-3-3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <span class="notif-badge" id="headerNotifBadge" style="display:none;"></span>
+      </button>
+      <div class="notif-popover" id="notifPopover">
+        <div class="notif-popover-head">
+          <span>Notifications</span>
+          <span id="notifPopoverSummary" class="notif-summary"></span>
+        </div>
+        <div class="notif-popover-list" id="notifPopoverList"></div>
+        <button class="notif-popover-seeall" id="notifPopoverSeeAll">See all notifications</button>
+      </div>
+    </div>
+    <div class="profile-wrap" id="profileWrap">
+      <div class="profile-trigger" id="profileTrigger">
+        <div class="profile-avatar" id="profileAvatar"></div>
+        <span id="profileName" style="font-family:var(--mono);font-size:11px;color:var(--ink);"></span>
+        <svg class="profile-chevron" width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="profile-menu" id="profileMenu">
+        <div class="profile-menu-head">
+          <div class="pname" id="profileMenuName"></div>
+          <div class="pmh-badges">
+            <span class="prole" id="profileMenuRole"></span>
+            <span class="pproject" id="activeProjectName"></span>
+          </div>
+        </div>
+        <button class="profile-menu-item" id="changeAvatarBtn">Change avatar&hellip;</button>
+        <input type="file" id="avatarInput" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none">
+        <button class="profile-menu-item" id="myContribBtn">My contributions</button>
+        <div class="profile-contrib-box" id="myContribBox" style="display:none"></div>
+        <button class="profile-menu-item admin-only" id="manageTeamBtn">Manage team&hellip;</button>
+        <button class="profile-menu-item" id="switchProjectBtn">Switch project&hellip;</button>
+        <button class="profile-menu-item danger" id="signOutBtn">Sign out</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="teamModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Manage team">
+      <div class="modal-head">
+        <span>Manage team &mdash; <span id="teamModalProject"></span></span>
+        <button class="profile-menu-item" id="teamModalClose">&times; Close</button>
+      </div>
+      <div id="teamReportsList" class="team-list"></div>
+      <div id="teamMembersList" class="team-list"></div>
+      <div class="team-add-row">
+        <select id="teamAddUsername"></select>
+        <select id="teamAddRole">
+          <option value="translator">translator</option>
+          <option value="reviewer">reviewer</option>
+          <option value="admin">admin</option>
+        </select>
+        <button class="btn primary" id="teamAddBtn">Add / update</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="helpModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card" style="width:min(480px,92vw);" role="dialog" aria-modal="true" aria-label="Help">
+      <div class="modal-head">
+        <span>Help</span>
+        <button class="profile-menu-item" id="helpModalClose">&times; Close</button>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Terms used in this app</div>
+        <div class="help-term-row">
+          <div class="help-term">TM (Translation Memory)</div>
+          <div class="help-def">Search past translations of similar or identical source text, so the same phrase doesn't get translated differently twice.</div>
+        </div>
+        <div class="help-term-row">
+          <div class="help-term">QA issue</div>
+          <div class="help-def">An automatic check on your translation (repeated words, punctuation, spacing, length, mismatched numbers) flagged for a second look. It doesn't block saving.</div>
+        </div>
+        <div class="help-term-row">
+          <div class="help-term">Token / placeholder mismatch</div>
+          <div class="help-def">Your translation is missing a game placeholder (like <code>%1</code> or <code>&lt;tag&gt;</code>) that appears in the source text, or has one the source doesn't.</div>
+        </div>
+        <div class="help-term-row">
+          <div class="help-term">Glossary miss</div>
+          <div class="help-def">This project has an approved translation for a term used in the source text, and your translation doesn't use it.</div>
+        </div>
+        <div class="help-term-row">
+          <div class="help-term">Lock</div>
+          <div class="help-def">Someone else is actively editing this string or file right now. Locked entries are read-only until they're released.</div>
+        </div>
+        <div class="help-term-row">
+          <div class="help-term">Suggest</div>
+          <div class="help-def">A string that's already translated can't be overwritten directly, so propose a replacement instead. The current translator or a reviewer can apply it.</div>
+        </div>
+        <div class="help-term-row">
+          <div class="help-term">Approve</div>
+          <div class="help-def">A reviewer marking a translation as reviewed and correct. It doesn't change the text.</div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Keyboard shortcuts</div>
+        <div class="help-shortcut-row"><span class="help-key">Ctrl+Enter</span><span class="help-shortcut-desc">Save and move to the next string (Zen mode)</span></div>
+        <div class="help-shortcut-row"><span class="help-key">&larr; &rarr;</span><span class="help-shortcut-desc">Previous / next page (when not typing in a field)</span></div>
+        <div class="help-shortcut-row"><span class="help-key">Esc</span><span class="help-shortcut-desc">Close the open dialog</span></div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">New here?</div>
+        <div class="help-intro">If your account shows "No access yet" on a project, click <b>Request to join</b>. A project admin needs to approve you before you can start translating; ask in your community's usual channel if it's been a while.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="reportModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card" style="width:min(420px,92vw);" role="dialog" aria-modal="true" aria-label="Report">
+      <div class="modal-head">
+        <span>Report <span id="reportTargetName"></span></span>
+        <button class="profile-menu-item" id="reportModalClose">&times; Close</button>
+      </div>
+      <p style="font-size:11.5px;color:var(--ink-faint);margin:0 0 10px;line-height:1.5;">
+        This goes to this project's admins only &mdash; not to the reported user.
+      </p>
+      <p id="reportContextLine" style="display:none;font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin:0 0 10px;padding:6px 8px;border:1px solid var(--line-soft);border-radius:var(--radius);"></p>
+      <textarea id="reportReasonInput" placeholder="What happened?" maxlength="1000"></textarea>
+      <button class="btn primary" id="reportSubmitBtn" style="width:100%;">Send report</button>
+      <div class="auth-error" id="reportError"></div>
+    </div>
+  </div>
+
+  <div id="confirmModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card" style="width:min(380px,92vw);" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+      <div class="modal-head">
+        <span id="confirmModalTitle">Confirm</span>
+        <button class="profile-menu-item" id="confirmModalClose">&times; Close</button>
+      </div>
+      <p class="confirm-modal-message" id="confirmModalMessage"></p>
+      <div class="confirm-modal-actions">
+        <button class="btn" id="confirmModalCancel">Cancel</button>
+        <button class="btn primary" id="confirmModalOk">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="uploadPreviewModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card" style="width:min(640px,92vw);" role="dialog" aria-modal="true" aria-label="Confirm source update">
+      <div class="modal-head">
+        <span>Confirm source update</span>
+        <button class="profile-menu-item" id="uploadPreviewClose">&times; Close</button>
+      </div>
+      <p class="confirm-modal-message">
+        This replaces the shared source files for everyone on this project. Existing translations for keys that still exist are kept; translations for <b>removed</b> keys will lose their source string.
+      </p>
+      <div id="uploadDiffResults" class="compare-results"></div>
+      <div class="confirm-modal-actions">
+        <button class="btn" id="uploadPreviewCancel">Cancel</button>
+        <button class="btn danger" id="uploadPreviewConfirm">Upload for everyone</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+    <button class="tab-btn" data-tab="editor">Editor</button>
+    <button class="tab-btn" data-tab="contributors">Contributors</button>
+    <div class="tabs-more" id="tabsMore">
+      <button class="tab-btn more-toggle" id="moreTabsBtn" type="button">More <svg width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="tabs-more-menu" id="moreTabsMenu">
+        <button class="tab-btn" data-tab="notifications">Notifications<span class="notif-badge" id="tabNotifBadge" style="display:none;"></span></button>
+        <button class="tab-btn admin-only" data-tab="compare">Compare Versions</button>
+        <button class="tab-btn" data-tab="concordance">Concordance</button>
+        <button class="tab-btn" data-tab="glossary">Glossary</button>
+        <button class="tab-btn admin-only" data-tab="qa">QA Report</button>
+        <button class="tab-btn admin-only" data-tab="activity">Activity Log</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="view active" id="view-dashboard">
+    <div class="dash-toolbar">
+      <input type="text" id="dashSearch" placeholder="Filter files&hellip;">
+    </div>
+    <div class="dash-table">
+      <div class="dash-header">
+        <div>File</div>
+        <div>Progress</div>
+        <div>Translated</div>
+        <div>Untranslated</div>
+        <div>Checks</div>
+        <div>Comments</div>
+      </div>
+      <div class="dash-list" id="dashboardList"></div>
+    </div>
+  </div>
+
+
+  <div class="view" id="view-editor">
+    <div class="sidebar">
+      <div class="sidebar-head">
+        <button class="load-btn admin-only" id="loadBtn">Upload / update source files</button>
+        <input type="file" id="fileInput" multiple accept=".json,.zip,.tbx" style="display:none">
+        <div class="load-hint"><span class="sync-dot" id="syncDot"></span><span id="syncLabel">synced</span><span class="admin-only-inline">Uploading here updates the shared files for everyone. Everyone's edits already saved are kept.</span></div>
+      </div>
+      <div class="file-list" id="fileList"></div>
+      <div class="sidebar-foot" id="sidebarFoot">Connecting to server&hellip;</div>
+    </div>
+
+    <div class="editor-main">
+      <div class="toolbar">
+        <input type="text" id="searchBox" placeholder="Search keys or text (this file)&hellip;">
+        <select id="filterSelect" style="display:none" aria-hidden="true" tabindex="-1">
+          <option value="all">All entries</option>
+          <optgroup label="Progress">
+            <option value="untranslated">Untranslated only</option>
+            <option value="edited">Edited only</option>
+          </optgroup>
+          <optgroup label="Quality">
+            <option value="mismatch">Token mismatches</option>
+            <option value="qa">QA issues</option>
+            <option value="glossary">Glossary misses</option>
+          </optgroup>
+          <optgroup label="Collaboration">
+            <option value="commented">Has comments</option>
+            <option value="unresolved">Unresolved comments</option>
+            <option value="mentions">Mentions you</option>
+          </optgroup>
+        </select>
+        <div class="filter-segmented" id="filterSegmented" role="group" aria-label="Filter entries">
+          <button type="button" class="fseg-btn active" data-filter="all">All</button>
+          <button type="button" class="fseg-btn" data-filter="untranslated">Untranslated</button>
+          <button type="button" class="fseg-btn" data-filter="edited">Edited</button>
+          <button type="button" class="fseg-btn" data-filter="qa">QA issues</button>
+          <div class="fseg-more-wrap" id="filterMoreWrap">
+            <button type="button" class="fseg-btn fseg-more-toggle" id="filterMoreBtn">More <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <div class="fseg-more-menu" id="filterMoreMenu">
+              <div class="fseg-more-label">Quality</div>
+              <button type="button" class="fseg-more-item" data-filter="mismatch">Token mismatches</button>
+              <button type="button" class="fseg-more-item" data-filter="glossary">Glossary misses</button>
+              <div class="fseg-more-label">Collaboration</div>
+              <button type="button" class="fseg-more-item" data-filter="commented">Has comments</button>
+              <button type="button" class="fseg-more-item" data-filter="unresolved">Unresolved comments</button>
+              <button type="button" class="fseg-more-item" data-filter="mentions">Mentions you</button>
+            </div>
+          </div>
+        </div>
+        <div class="toolbar-refine-row">
+          <select id="userFilterSelect" title="Filter by translator">
+            <option value="">Any translator</option>
+          </select>
+          <label class="toolbar-toggle" for="globalSearchToggle">
+            <input type="checkbox" id="globalSearchToggle">
+            <span class="tg-box"><svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M1.5 5.2L4 7.7L8.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            All files
+          </label>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="pager" id="pager" style="display:none;"></div>
+        <div class="spacer" style="flex:1"></div>
+        <div class="toolbar-actions">
+          <div class="stat-pill" id="fileStat"></div>
+          <div class="toolbar-divider"></div>
+          <button class="btn zen-toggle" id="zenToggleBtn" title="Focus on one string at a time" aria-label="Zen mode">
+            <svg class="btn-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8.5 1L3 9h4l-1 6 6-9H8l1.5-5z" fill="currentColor"/></svg>
+            <span class="btn-label">Zen</span>
+          </button>
+          <button class="btn" id="fileLockBtn" title="Claim this whole file so others can't edit it while you work" aria-label="Lock file">
+            <span class="btn-icon" id="fileLockIcon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.2" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7V4.8a2.5 2.5 0 0 1 5 0V7" stroke="currentColor" stroke-width="1.3"/></svg></span>
+            <span class="btn-label" id="fileLockLabel">Lock file</span>
+          </button>
+          <div class="toolbar-divider"></div>
+          <div class="export-dropdown admin-only" id="exportDropdown">
+            <button class="btn primary" id="exportMenuToggle">Export <svg width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <div class="export-dropdown-menu" id="exportMenu">
+              <button class="profile-menu-item" id="exportBtn">Export ZIP</button>
+              <button class="profile-menu-item" id="exportFileBtn">Export file</button>
+              <button class="profile-menu-item" id="exportTbxBtn">Export TBX</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrap" id="tableWrap">
+        <div class="empty-state">
+          <div class="glyph">&ldquo;&rdquo;</div>
+          <p>Connecting to the server&hellip;</p>
+        </div>
+      </div>
+
+      <div class="zen-wrap" id="zenWrap" style="display:none;">
+        <div class="zen-nav">
+          <button id="zenFirstBtn" title="First" aria-label="First entry"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M9 3.5L4.5 8L9 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.5 3.5L8 8L12.5 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button id="zenPrevBtn" title="Previous" aria-label="Previous entry"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3.5L5.5 8L10 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="zen-pos">
+            <input type="text" id="zenPosInput" inputmode="numeric">
+            <span id="zenPosTotal">/ 0</span>
+          </div>
+          <button id="zenNextBtn" title="Next" aria-label="Next entry"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3.5L10.5 8L6 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button id="zenLastBtn" title="Last" aria-label="Last entry"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 3.5L8 8L3.5 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 3.5L11.5 8L7 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="spacer" style="flex:1"></div>
+          <div class="zen-file-progress" id="zenFileProgress"></div>
+        </div>
+        <div class="zen-card-wrap" id="zenCardWrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="view" id="view-compare">
+    <div class="compare-intro">
+      Compare two versions of a translation file set &mdash; for example, an older export against a fresh copy of the game's <b>Translate</b> files after an update. This finds keys that were <b>added</b>, <b>removed</b>, or whose <b>source text changed</b> underneath an existing translation.
+    </div>
+    <div class="drop-row">
+      <div class="dropzone" id="dropOld">
+        <h2>Old version</h2>
+        <p>The version you translated against previously</p>
+        <button class="btn" id="loadOldBtn">Choose files or .zip</button>
+        <input type="file" id="oldInput" multiple accept=".json,.zip,.tbx" style="display:none">
+        <div class="filecount" id="oldCount"></div>
+      </div>
+      <div class="dropzone" id="dropNew">
+        <h2>New version</h2>
+        <p>The version you want to diff against</p>
+        <button class="btn" id="loadNewBtn">Choose files or .zip</button>
+        <input type="file" id="newInput" multiple accept=".json,.zip,.tbx" style="display:none">
+        <div class="filecount" id="newCount"></div>
+      </div>
+    </div>
+    <div>
+      <button class="btn primary" id="runDiffBtn" disabled>Compute diff</button>
+    </div>
+    <div class="compare-results" id="compareResults"></div>
+  </div>
+
+  <div class="view" id="view-contributors">
+    <div class="contrib-summary" id="contribSummary"></div>
+    <div class="contrib-list" id="contribList"></div>
+  </div>
+
+  <div class="view" id="view-concordance">
+    <div class="concordance-intro">
+      Search every source string and its current translation across the whole project &mdash; useful to see how a word or phrase was translated elsewhere before you translate it again.
+    </div>
+    <div class="concordance-toolbar">
+      <input type="text" id="concordanceSearch" placeholder="Search phrase in source or translation&hellip;">
+      <button class="btn primary" id="concordanceSearchBtn">Search</button>
+    </div>
+    <div class="concordance-summary" id="concordanceSummary"></div>
+    <div class="concordance-list" id="concordanceList"></div>
+  </div>
+
+  <div class="view" id="view-glossary">
+    <div class="compare-intro">
+      Approved source-term &rarr; translation pairs. Terms found in the source text are highlighted inline in the Editor, and a translation missing its approved rendering shows up as a <b>glossary miss</b> in QA.
+    </div>
+    <form id="glossaryForm" class="glossary-form reviewer-only">
+      <input type="text" id="glossaryTermInput" placeholder="Source term (e.g. zombie)" maxlength="200" required>
+      <input type="text" id="glossaryTranslationInput" placeholder="Approved translation (e.g. thay ma)" maxlength="200" required>
+      <input type="text" id="glossaryNoteInput" placeholder="Note (optional)" maxlength="500">
+      <button type="submit" class="btn primary">Add term</button>
+    </form>
+    <div class="activity-toolbar">
+      <input type="text" id="glossarySearch" placeholder="Search terms&hellip;">
+    </div>
+    <div class="glossary-summary" id="glossarySummary"></div>
+    <div class="glossary-list" id="glossaryList"></div>
+  </div>
+
+  <div class="view" id="view-qa">
+    <div class="activity-toolbar">
+      <input type="text" id="qaSearch" placeholder="Search flagged entries (file, key, text)&hellip;">
+      <select id="qaTypeFilter" style="display:none" aria-hidden="true" tabindex="-1">
+        <option value="all">All issue types</option>
+        <optgroup label="Consistency">
+          <option value="mismatch">Token mismatch</option>
+          <option value="glossary">Glossary miss</option>
+        </optgroup>
+        <optgroup label="Wording">
+          <option value="repeat">Repeated word</option>
+          <option value="number">Number mismatch</option>
+          <option value="length">Length mismatch</option>
+        </optgroup>
+        <optgroup label="Formatting">
+          <option value="punct">Punctuation</option>
+          <option value="space">Spacing</option>
+          <option value="trim">Stray whitespace</option>
+        </optgroup>
+      </select>
+      <div class="filter-segmented" id="qaTypeSegmented" role="group" aria-label="Filter by issue type">
+        <button type="button" class="fseg-btn active" data-filter="all">All</button>
+        <button type="button" class="fseg-btn" data-filter="mismatch">Mismatch</button>
+        <button type="button" class="fseg-btn" data-filter="glossary">Glossary</button>
+        <div class="fseg-more-wrap" id="qaTypeMoreWrap">
+          <button type="button" class="fseg-btn fseg-more-toggle" id="qaTypeMoreBtn">More <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="fseg-more-menu" id="qaTypeMoreMenu">
+            <div class="fseg-more-label">Wording</div>
+            <button type="button" class="fseg-more-item" data-filter="repeat">Repeated word</button>
+            <button type="button" class="fseg-more-item" data-filter="number">Number mismatch</button>
+            <button type="button" class="fseg-more-item" data-filter="length">Length mismatch</button>
+            <div class="fseg-more-label">Formatting</div>
+            <button type="button" class="fseg-more-item" data-filter="punct">Punctuation</button>
+            <button type="button" class="fseg-more-item" data-filter="space">Spacing</button>
+            <button type="button" class="fseg-more-item" data-filter="trim">Stray whitespace</button>
+          </div>
+        </div>
+      </div>
+      <label class="toolbar-toggle" for="qaShowResolved">
+        <input type="checkbox" id="qaShowResolved">
+        <span class="tg-box"><svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M1.5 5.2L4 7.7L8.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        Show ignored/approved
+      </label>
+      <button class="btn" id="qaRefreshBtn">Refresh</button>
+    </div>
+    <div class="qa-summary" id="qaSummary"></div>
+    <div class="qa-bulk-bar" id="qaBulkBar">
+      <label class="toolbar-toggle" for="qaSelectAll">
+        <input type="checkbox" id="qaSelectAll">
+        <span class="tg-box"><svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M1.5 5.2L4 7.7L8.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        Select all
+      </label>
+      <span class="qa-bulk-count" id="qaBulkCount"></span>
+      <div class="qa-bulk-actions">
+        <button class="btn" id="qaBulkIgnoreBtn" disabled>Ignore selected</button>
+        <button class="btn primary" id="qaBulkApproveBtn" disabled>Approve selected</button>
+      </div>
+    </div>
+    <div class="qa-list" id="qaList"></div>
+  </div>
+
+  <div class="view" id="view-activity">
+    <div class="activity-toolbar">
+      <input type="text" id="logSearch" placeholder="Search log (user, file, key, text)&hellip;">
+      <button class="btn" id="logRefreshBtn">Refresh</button>
+    </div>
+    <div class="activity-list" id="activityList"></div>
+  </div>
+
+  <div class="view" id="view-notifications">
+    <div class="activity-toolbar">
+      <div class="filter-segmented" id="notifFilterSegmented" role="group" aria-label="Filter notifications">
+        <button type="button" class="fseg-btn active" data-notiffilter="all">All</button>
+        <button type="button" class="fseg-btn" data-notiffilter="mentions">Mentions you</button>
+      </div>
+      <span id="notifSummary" class="notif-summary"></span>
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn" id="notifRefreshBtn">Refresh</button>
+    </div>
+    <div class="notif-list" id="notifList"></div>
+  </div>
+
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="a11yAnnouncer" class="sr-only" role="status" aria-live="polite"></div>
+<div class="mention-dropdown" id="mentionDropdown"></div>
+<script src="/js/app.js"></script>
+</body>
+</html>
